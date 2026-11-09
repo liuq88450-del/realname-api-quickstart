@@ -1,8 +1,9 @@
-# 实名核验 API 快速开始（Python）
+# 三要素实名核验 API 快速开始（Python）
 
-10 分钟跑通二要素 / 三要素核验的示例仓库。只用 Python 标准库，不需要装包。
+10 分钟跑通三要素核验：姓名 + 身份证号 + 手机号。只用 Python 标准库，无需安装依赖。
 
-> 接口域名、路径、字段名、签名规则以开通时下发的正式文档为准；本仓库里的写法是结构示意，填好配置即可替换。
+> 鉴权只有一个请求头 `X-API-Key`，JSON 进、JSON 出，不需要签名。
+> **示例用假数据，请填入自己的密钥和测试数据。**
 
 ## 30 秒跑起来
 
@@ -14,77 +15,56 @@ cd realname-api-quickstart
 python3 realname_quickstart.py --demo
 ```
 
-看到 `结论：一致（result=1）` 就说明代码能跑。
-
 ## 真实接入（4 步）
 
-### 1. 领免费额度
+### 1. 领免费试用
 
-注册后自动发放：二要素 100 条、三要素 50 条，各限 1 次，7 天有效。
+提交试用申请后发 Key：三要素 **100 次**，7 天有效。
 
 ### 2. 填配置
 
 ```bash
-export RN_BASE_URL="https://<正式文档里的域名>"
-export RN_APP_ID="app_xxxxx"
-export RN_APP_SECRET="<开通邮件里的密钥>"
+export RN_BASE_URL="https://<开通时给的域名>"
+export RN_API_KEY="ak_live_xxx"
 ```
 
 Windows PowerShell：
 
 ```powershell
-$env:RN_BASE_URL="https://<正式文档里的域名>"
-$env:RN_APP_ID="app_xxxxx"
-$env:RN_APP_SECRET="<开通邮件里的密钥>"
+$env:RN_BASE_URL="https://<开通时给的域名>"
+$env:RN_API_KEY="ak_live_xxx"
 ```
 
-### 3. 发一笔二要素
+### 3. 发一笔请求
 
 ```bash
-python3 realname_quickstart.py two \
-  --name "张*" --idcard "110101********1234"
-```
-
-### 4. 发一笔三要素
-
-```bash
-python3 realname_quickstart.py three \
+python3 realname_quickstart.py \
   --name "张*" --idcard "110101********1234" --mobile "138****5678"
 ```
 
-> **示例用假数据，请填入自己的密钥。** 示例里的姓名、证件号、手机号、app_id 都是脱敏占位，换成自己的测试数据；不要用真实客户数据。
-
-## 返回结构
+### 4. 看返回
 
 ```json
 {
-  "code": "0",
-  "msg": "success",
-  "request_id": "req_...",
-  "order_no": "quickstart-...",
-  "result": 1,
-  "result_desc": "一致"
+  "code": "OK",
+  "request_id": "r_...",
+  "result": { "match": true, "level": "id3" },
+  "billed": true
 }
 ```
 
-`result`：1 一致 / 2 不一致 / 3 查无记录（以正式文档为准）。
+返回码：`OK` 一致、`NO_MATCH` 不一致、`PARAM_INVALID` 参数错、`KEY_INVALID` Key 无效、`RATE_LIMITED` 超 QPS、`QUOTA_EXCEEDED` 余额不足、`UPSTREAM_TIMEOUT` / `UPSTREAM_ERROR` 上游异常。
 
-## 要改哪几个地方
+## 示例数据说明
 
-| 位置 | 说明 |
-|---|---|
-| `PATH_TWO` / `PATH_THREE` | 接口路径，按正式文档替换 |
-| `build_sign()` | 签名算法与拼接规则，按正式文档替换 |
-| `build_payload()` | 字段名（如 `app_id`、`order_no`）按正式文档核对 |
-| `RN_*` 环境变量 | 域名与密钥，不要写进代码 |
+示例里的姓名、证件号、手机号都是**脱敏占位**，原样发会返回 `PARAM_INVALID`，这是正常的；换成你自己的测试数据即可。
 
 ## 生产环境还要做
 
-- 密钥放服务端 / 环境变量 / 配置中心，不进前端、不进仓库；
-- 日志记录 `request_id`、`order_no`，并对证件号、手机号脱敏；
-- 用 `order_no` 做幂等，重试不重复计费；
-- 超时 3s/8s、指数退避重试、错误率熔断；
-- 余额告警。
+- Key 只放服务端，用环境变量注入；
+- 日志记录 `request_id`，证件号、手机号打码；
+- 用 `Idempotency-Key` 做幂等，重试不重复计费；
+- 超时、退避、余额告警。
 
 ## 文件
 
@@ -98,8 +78,8 @@ realname-api-quickstart/
 
 ## 许可
 
-MIT。示例代码可自由用于你的项目。
+MIT。
 
 ---
 
-*维护：小通｜更新：2026-11-09*
+*维护：小通｜更新：2026-11-10*
